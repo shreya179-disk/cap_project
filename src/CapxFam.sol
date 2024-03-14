@@ -584,7 +584,8 @@ contract CapxFam is
     * @param _passId Token ID of Capx Fam
     * @param _tokenURI New TokenURI
     */
-    function updateTokenURI(uint256 _passId, string memory _tokenURI) external onlyOwner {
+    function updateTokenURI(uint256 _passId, string memory _tokenURI) external  {
+    require(isAuthorizedAddress[_msgSender()] || owner() == _msgSender(), "Unauthorized to update TokenURI");
     require(bytes(_tokenURI).length > 0, "TokenURI cannot be empty");
     
     // Ensure the NFT exists
