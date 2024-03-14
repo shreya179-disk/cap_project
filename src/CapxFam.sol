@@ -556,16 +556,27 @@ contract CapxFam is
         return getApproved(_passId);
     }
 
+     /**
+    * @dev Set or unset the approval of an authorized address as an operator for the caller's NFTs
+    * @param _authorizedAddress Address to be set as an authorized address for the caller
+    * @param _approved Approval status of the operator
+    */
+    function setApprovalForAll(address _authorizedAddress, bool _approved) public override(ERC721Upgradeable, IERC721) onlyOwner {
+    require(_authorizedAddress != _msgSender(), "Cannot approve yourself");
+    _setApprovalForAll(_msgSender(), _authorizedAddress, _approved);
+    }
+
+
     /**
-     * @dev Set or unset the approval of a third party (called an operator) for the caller's NFTs
-     * @param _operator Address to be set as an operator for the caller
-     * @param _approved Approval status of the operator
-     */
-    function setApprovalForAll(address _operator, bool _approved) public onlyOwner override(ERC721Upgradeable, IERC721)   {
-    require(_operator != _msgSender(), "Cannot approve yourself");
-    _setApprovalForAll(_msgSender(),_operator, _approved);
-   // emit ApprovalForAll(_msgSender(), _operator, _approved);
-}
+    * @dev Check if an authorized address is approved as an operator for the caller
+    * @param _authorizedAddress Address of the authorized address
+    * @param _operator Address of the operator
+    * @return The approval status
+    */
+    function isApprovedOperator(address _authorizedAddress, address _operator) external view returns (bool) {
+    return operatorApprovals[_authorizedAddress][_operator];
+    }
+
 
 
     /**
