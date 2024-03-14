@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.0;
 
 
 import{ERC721Upgradeable} from  "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
@@ -10,7 +10,9 @@ import {ERC721BurnableUpgradeable} from "lib/openzeppelin-contracts-upgradeable/
 import {ERC721EnumerableUpgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import {Initializable} from "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
-//import {ERC721PausabECDSAleUpgradeable} from "lib/openzeppelin-contracts-upgradeable/utils/cryptography/ECDSA.sol";
+import {ECDSA} from "lib/openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
+import "lib/openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
+
 
 interface ICapxFam {
     // Custom Errors
@@ -135,7 +137,7 @@ contract CapxFam is
     ERC721EnumerableUpgradeable,
     ERC721URIStorageUpgradeable,
     UUPSUpgradeable,
-    ICapxFam
+    ICapxFam 
 {
     // Data Variables
     address internal authorizedMinter;
@@ -251,6 +253,12 @@ contract CapxFam is
         }
         return super._update(to, tokenId, auth);
     }
+    
+
+
+
+
+
 
     function tokenURI(
         uint256 tokenId
@@ -265,6 +273,9 @@ contract CapxFam is
     }
 
     // Helper Functions
+
+   
+
     function recoverSigner(
         bytes32 messagehash,
         bytes memory signature
@@ -275,6 +286,10 @@ contract CapxFam is
         return ECDSA.recover(messageDigest, signature);
     }
 
+    
+
+    
+    
     // Core Functions
 
     /**
@@ -341,7 +356,7 @@ contract CapxFam is
             revert InvalidInput();
         }
         if (
-            _messageHash == "" ||
+            _messageHash == bytes32(0) ||
             keccak256(abi.encodePacked(_tokenURI, _receipient)) != _messageHash
         ) {
             revert InvalidMessageHash();
@@ -498,4 +513,88 @@ contract CapxFam is
     ) external view returns (uint256) {
         return userCapxFamID[_userAddress];
     }
+
+    /**
+     * @dev Transfer ownership of the CapxFam NFT
+     * @param _to The address to which the NFT is being transferred
+     * @param _passId Token ID of Capx Fam
+     */
+    function transferCapxFam(address _to, uint256 _passId) external {
+        address owner = _ownerOf(_passId);
+        require(owner == _msgSender() || isApprovedForAll(owner, _msgSender()), "Not authorized to transfer");
+
+        _safeTransfer(owner, _to, _passId, "");
+
+        // Update userCapxFamID mapping
+        userCapxFamID[owner] = 0;
+        userCapxFamID[_to] = _passId;
+
+        //emit Transfer(owner, _to, _passId);
+    }
+
+    /**
+     * @dev Approve another address to transfer the ownership of the CapxFam NFT
+     * @param _to The address being approved for transfer
+     * @param _passId Token ID of Capx Fam
+     */
+    function approveTransfer(address _to, uint256 _passId) external {
+        address owner = _ownerOf(_passId);
+        require(owner == _msgSender(), "Not the owner of the NFT");
+
+        approve(_to, _passId);
+
+        //emit Approval(owner, _to, _passId);
+    }
+
+    /**
+     * @dev Get the approved address for a single NFT
+     * @param _passId Token ID of Capx Fam
+     * @return The approved address
+     */
+    function getApprovedAddress(uint256 _passId) external view returns (address) {
+      //  require(_exists(_passId), "NFT does not exist");
+        return getApproved(_passId);
+    }
+
+    /**
+     * @dev Set or unset the approval of a third party (called an operator) for the caller's NFTs
+     * @param _operator Address to be set as an operator for the caller
+     * @param _approved Approval status of the operator
+     */
+    function setApprovalForAll(address _operator, bool _approved) public onlyOwner override(ERC721Upgradeable, IERC721)   {
+    require(_operator != _msgSender(), "Cannot approve yourself");
+    _setApprovalForAll(_msgSender(),_operator, _approved);
+   // emit ApprovalForAll(_msgSender(), _operator, _approved);
 }
+
+
+    /**
+     * @dev Get the approval status of an operator for a given owner
+     * @param _owner Address of the owner
+     * @param _operator Address of the operator
+     * @return The approval status
+     */
+    function getApprovalStatus(address _owner, address _operator) external view returns (bool) {
+        return isApprovedForAll(_owner, _operator);
+    }
+    
+
+    /**
+    * @dev Update the TokenURI of a Capx Fam NFT
+    * @param _passId Token ID of Capx Fam
+    * @param _tokenURI New TokenURI
+    */
+    function updateTokenURI(uint256 _passId, string memory _tokenURI) external onlyOwner {
+    require(bytes(_tokenURI).length > 0, "TokenURI cannot be empty");
+    
+    // Ensure the NFT exists
+    //require(_exists(_passId), "NFT does not exist");
+    
+    // Update the TokenURI
+     _setTokenURI(_passId, _tokenURI);
+    }
+    
+}
+
+    
+
